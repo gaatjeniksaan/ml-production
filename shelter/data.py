@@ -49,12 +49,8 @@ def convert_camel_case(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-
-
-
-
 def add_features(df):
-    """Add some features to our data.
+    """Add some features to our data. 
 
     Parameters
     ----------
@@ -66,67 +62,28 @@ def add_features(df):
     with_features : pandas.DataFrame
         DataFrame with some column features added
     """
+    df = df.copy()
+    
+    # Check if df is a dog or not.
     df['is_dog'] = check_is_dog(df['animal_type'])
 
-
     # Check if it has a name.
-    df['has_name'] = df['name'].str.lower() != 'unknown'
-
+    df['has_name'] = check_has_name(df['name'])
 
     # Get sex.
-    sexUponOutcome = df['sex_upon_outcome']
-    sex = pd.Series('unknown', index=sexUponOutcome.index)
-
-    sex.loc[sexUponOutcome.str.endswith('Female')] = 'female'
-    sex.loc[sexUponOutcome.str.endswith('Male')] = 'male'
-    df['sex'] = sex
-
-
+    df['sex'] = get_sex(df['sex_upon_outcome'])
 
     # Check if neutered.
-    neutered = sexUponOutcome.str.lower()
-    neutered.loc[neutered.str.contains('neutered')] = 'fixed'
-    neutered.loc[neutered.str.contains('spayed')] = 'fixed'
-
-
-    neutered.loc[neutered.str.contains('intact')] = 'intact'
-    neutered.loc[~neutered.isin(['fixed', 'intact'])] = 'unknown'
-
-
-    df['neutered'] = neutered
-
-
+    df['neutered'] = get_neutered(df['sex_upon_outcome'])
 
     # Get hair type.
-
-    hairType = df['breed'].str.lower()
-    Valid_hair_types = ['shorthair', 'medium hair', 'longhair']
-
-
-
-    for hair in Valid_hair_types:
-        is_hair_type = hairType.str.contains(hair)
-        hairType[is_hair_type] = hair
-
-    hairType[~hairType.isin(Valid_hair_types)] = 'unknown'
-
-
-    df['hair_type'] = hairType
-
+    df['hair_type'] = get_hair_type(df['breed'])
 
     # Age in days upon outcome.
-
-    Split_Age = df['age_upon_outcome'].str.split()
-    time = Split_Age.apply(lambda x: x[0] if x[0] != 'Unknown' else np.nan)
-    period = Split_Age.apply(lambda x: x[1] if x[0] != 'Unknown' else None)
-    period_Mapping = {'year': 365, 'years': 365, 'weeks': 7, 'week': 7,
-                      'month': 30, 'months': 30, 'days': 1, 'day': 1}
-    days_upon_outcome = time.astype(float) * period.map(period_Mapping)
-    df['days_upon_outcome'] = days_upon_outcome
-
-
+    df['days_upon_outcome'] = compute_days_upon_outcome(df['days_upon_outcome'])
 
     return df
+
 
 def check_is_dog(animal_type):
     """Check if the animal is a dog, otherwise return False.
@@ -141,6 +98,7 @@ def check_is_dog(animal_type):
     result : pandas.Series
         Dog or not
     """
+
     is_cat_dog = animal_type.str.lower().isin(['dog', 'cat'])
     if not is_cat_dog.all():
         logging.error('Found something else but dogs and cats:\n%s',
@@ -161,7 +119,8 @@ def check_has_name(name):
     result : pandas.Series
         Unknown or not.
     """
-    return name  # TODO: Replace this.
+
+    return name.str.lower() != 'unknown'
 
 
 def get_sex(sex_upon_outcome):
@@ -177,7 +136,12 @@ def get_sex(sex_upon_outcome):
     sex : pandas.Series
         Sex when coming in
     """
-    return sex_upon_outcome  # TODO: Replace this.
+
+    sex = pd.Series('unknown', index=sex_upon_outcome.index)
+    sex.loc[sex_upon_outcome.str.endswith('Female')] = 'female'
+    sex.loc[sex_upon_outcome.str.endswith('Male')] = 'male'
+
+    return sex
 
 
 def get_neutered(sex_upon_outcome):
@@ -193,7 +157,15 @@ def get_neutered(sex_upon_outcome):
     sex : pandas.Series
         Intact, fixed or unknown
     """
-    return sex_upon_outcome  # TODO: Replace this.
+
+    neutered = sex_upon_outcome.str.lower()
+    neutered.loc[neutered.str.contains('neutered')] = 'fixed'
+    neutered.loc[neutered.str.contains('spayed')] = 'fixed'
+
+    neutered.loc[neutered.str.contains('intact')] = 'intact'
+    neutered.loc[~neutered.isin(['fixed', 'intact'])] = 'unknown'
+
+    return neutered
 
 
 def get_hair_type(breed):
@@ -209,7 +181,16 @@ def get_hair_type(breed):
     hair_type : pandas.Series
         Hair type
     """
-    return breed  # TODO: Replace this.
+    hair_type = breed.str.lower()
+    valid_hair_types = ['shorthair', 'medium hair', 'longhair']
+
+    for hair in valid_hair_types:
+        is_hair_type = hair_type.str.contains(hair)
+        hair_type[is_hair_type] = hair
+
+    hair_type[~hair_type.isin(valid_hair_types)] = 'unknown'
+
+    return hair_type
 
 
 def compute_days_upon_outcome(age_upon_outcome):
@@ -225,4 +206,12 @@ def compute_days_upon_outcome(age_upon_outcome):
     days_upon_outcome : pandas.Series
         Age in days
     """
-    return age_upon_outcome  # TODO: Replace this.
+
+    split_age = age_upon_outcome.str.split()
+    time = split_age.apply(lambda x: x[0] if x[0] != 'Unknown' else np.nan)
+    period = split_age.apply(lambda x: x[1] if x[0] != 'Unknown' else None)
+    period_mapping = {'year': 365, 'years': 365, 'weeks': 7, 'week': 7,
+                      'month': 30, 'months': 30, 'days': 1, 'day': 1}
+    days_upon_outcome = time.astype(float) * period.map(period_mapping)
+
+    return days_upon_outcome
