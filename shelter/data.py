@@ -81,7 +81,7 @@ def add_features(df):
 
     # Age in days upon outcome.
     df['days_upon_outcome'] = (
-        compute_days_upon_outcome(df['days_upon_outcome'])
+        compute_days_upon_outcome(df['age_upon_outcome'])
     )
 
     return df
