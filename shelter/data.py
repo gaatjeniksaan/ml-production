@@ -63,7 +63,7 @@ def add_features(df):
         DataFrame with some column features added
     """
     df = df.copy()
-    
+
     # Check if df is a dog or not.
     df['is_dog'] = check_is_dog(df['animal_type'])
 
@@ -80,7 +80,9 @@ def add_features(df):
     df['hair_type'] = get_hair_type(df['breed'])
 
     # Age in days upon outcome.
-    df['days_upon_outcome'] = compute_days_upon_outcome(df['days_upon_outcome'])
+    df['days_upon_outcome'] = (
+        compute_days_upon_outcome(df['days_upon_outcome'])
+    )
 
     return df
 
