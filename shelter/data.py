@@ -50,7 +50,7 @@ def convert_camel_case(name):
 
 
 def add_features(df):
-    """Add some features to our data. 
+    """Add some features to our data.
 
     Parameters
     ----------
